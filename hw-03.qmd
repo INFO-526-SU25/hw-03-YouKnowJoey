@@ -1,29 +1,144 @@
 ---
 title: "HW 03"
-author: "INSERT YOUR NAME HERE"
+author: "Joey Garcia"
 format:
   html:
     embed-resources: true
 toc: true
 ---
 
+```{r setup and load libraries}
+if (!require("pacman")) 
+  install.packages("pacman")
+
+pacman::p_load(tidyverse, lubridate, glue, scales, dplyr, ggthemes, # most necessary libs.
+               ggridges, # density ridge plots and themes
+               dsbox,    # data science in a box (datasets)
+               fs,       # filesystem lib.
+               janitor,  # clean data
+               palmerpenguins
+               )       
+
+# set theme for ggplot2
+ggplot2::theme_set(ggplot2::theme_minimal(base_size = 14))
+
+# set width of code output
+options(width = 65)
+
+# set figure parameters for knitr
+knitr::opts_chunk$set(
+  fig.width = 7,        # 7" width
+  fig.asp = 0.618,      # the golden ratio
+  fig.retina = 3,       # dpi multiplier for displaying HTML output on retina
+  fig.align = "center", # center align figures
+  dpi = 300             # higher dpi, sharper image
+)
+
+```
+
 ## 1 - Du Bois challenge.
 
 ```{r}
-#| label: label-me-1
+#| label: Du-Bois-Challenge
+
+income <- read.csv("data/income.csv")
+glimpse(income)
+
+# Add social class labels
+income <- income |>
+  mutate(
+    social = c("poor", "poor", "fair", "fair", "comfortable", "comfortable", "well-to-do"),
+    Other = replace_na(Other, 0),
+    income_label = paste0("$", format(Average_Income, big.mark = ",")),
+    ClassLabel = paste0(Class, "\n(", income_label, ")"),
+    ClassLabel = factor(ClassLabel, levels = unique(ClassLabel))
+  )
+
+ordered_categories <- c("Other", "Tax", "Clothes", "Food", "Rent")
+
+# Prepare income data
+income_clean <- income |>
+  select(ClassLabel, social, Rent, Food, Clothes, Tax, Other) |>
+  pivot_longer(cols = Rent:Other, names_to = "Category", values_to = "Percent") |>
+  mutate(Category = factor(Category, levels = ordered_categories)) |>
+  group_by(ClassLabel) |>
+  mutate(pos = cumsum(Percent) - Percent / 2) |>
+  ungroup()
+
+category_colors <- c(
+  Rent = "#161616",
+  Food = "#7d6683",
+  Clothes = "#b78a77",
+  Tax = "#a9a09d",
+  Other = "#bdb09f"
+)
+
+# Create summary for social labels
+label_data <- income_clean |>
+  group_by(ClassLabel, social) |>
+  summarise(total = sum(Percent), .groups = "drop") |>
+  mutate(y_pos = 101)  # position of label
+
+# Plot
+income_clean |>
+  ggplot(aes(x = fct_rev(ClassLabel), y = Percent, fill = Category)) +
+  geom_bar(stat = "identity", position = "stack", color = "black") +
+  geom_text(
+    aes(label = paste0(round(Percent, 1), "%"), y = pos),
+    color = "white", size = 2.5
+  ) +
+  # Add social class labels
+  geom_text(
+    data = label_data,
+    aes(x = fct_rev(ClassLabel), y = y_pos, label = social),
+    inherit.aes = FALSE,
+    hjust = 0,
+    angle = 90,
+    fontface = "bold",
+    size = 2
+  ) +
+  scale_fill_manual(values = category_colors) +
+  coord_flip() +
+  scale_y_continuous(labels = NULL) +
+  labs(
+    title = "",
+    x = "",
+    y = "FOR FURTHER STATISTICS RAISE THIS FRAME."
+  ) +
+  theme_minimal(base_size = 14) +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5),
+    axis.text.y = element_text(face = "bold"),
+    legend.position = "none",
+    plot.margin = margin(r = 10)
+  )
 
 ```
 
 ## 2 - COVID survey - interpret
 
 ```{r}
-#| label: label-me-2
+#| label: COVID-interpret
 
 ```
 
 ## 3 - COVID survey - reconstruct
 
+```{r}
+#| label: COVID-reconstruct
+
+```
 
 ## 4 - COVID survey - re-reconstruct
 
+```{r}
+#| label: COVID-re-reconstruct
+
+```
+
 ## 5 - COVID survey - another view
+
+```{r}
+#| label: COVID-alternate-plot
+
+```
