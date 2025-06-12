@@ -12,11 +12,9 @@ if (!require("pacman"))
   install.packages("pacman")
 
 pacman::p_load(tidyverse, lubridate, glue, scales, dplyr, ggthemes, # most necessary libs.
-               ggridges, # density ridge plots and themes
-               dsbox,    # data science in a box (datasets)
+               ggimage,  # change background with image
                fs,       # filesystem lib.
-               janitor,  # clean data
-               palmerpenguins
+               janitor  # clean data
                )       
 
 # set theme for ggplot2
@@ -42,28 +40,27 @@ knitr::opts_chunk$set(
 #| label: Du-Bois-Challenge
 
 income <- read.csv("data/income.csv")
-glimpse(income)
 
-# Add social class labels
+# Add "average_income" to Class Labels
 income <- income |>
   mutate(
-    social = c("poor", "poor", "fair", "fair", "comfortable", "comfortable", "well-to-do"),
     Other = replace_na(Other, 0),
     income_label = paste0("$", format(Average_Income, big.mark = ",")),
-    ClassLabel = paste0(Class, "\n(", income_label, ")"),
+    ClassLabel = paste0(Class, " | ", income_label),
     ClassLabel = factor(ClassLabel, levels = unique(ClassLabel))
   )
 
-ordered_categories <- c("Other", "Tax", "Clothes", "Food", "Rent")
-
-# Prepare income data
+# Prepare income data for bar plot
 income_clean <- income |>
-  select(ClassLabel, social, Rent, Food, Clothes, Tax, Other) |>
+  select(ClassLabel, Rent, Food, Clothes, Tax, Other) |>
   pivot_longer(cols = Rent:Other, names_to = "Category", values_to = "Percent") |>
   mutate(Category = factor(Category, levels = ordered_categories)) |>
   group_by(ClassLabel) |>
   mutate(pos = cumsum(Percent) - Percent / 2) |>
   ungroup()
+
+# Define Category order and colors
+ordered_categories <- c("Other", "Tax", "Clothes", "Food", "Rent")
 
 category_colors <- c(
   Rent = "#161616",
@@ -73,54 +70,89 @@ category_colors <- c(
   Other = "#bdb09f"
 )
 
-# Create summary for social labels
-label_data <- income_clean |>
-  group_by(ClassLabel, social) |>
-  summarise(total = sum(Percent), .groups = "drop") |>
-  mutate(y_pos = 101)  # position of label
 
 # Plot
-income_clean |>
+income_plot <- income_clean |>
   ggplot(aes(x = fct_rev(ClassLabel), y = Percent, fill = Category)) +
-  geom_bar(stat = "identity", position = "stack", color = "black") +
-  geom_text(
-    aes(label = paste0(round(Percent, 1), "%"), y = pos),
-    color = "white", size = 2.5
+  geom_bar(
+    stat = "identity", 
+    position = "stack", 
+    color = "black",
+    width = 0.7
   ) +
-  # Add social class labels
   geom_text(
-    data = label_data,
-    aes(x = fct_rev(ClassLabel), y = y_pos, label = social),
-    inherit.aes = FALSE,
-    hjust = 0,
-    angle = 90,
-    fontface = "bold",
+    data = income_clean |> filter(Percent > 1),
+    aes(label = paste0(round(Percent, 1), "%"), y = pos),
+    color = "white", 
     size = 2
   ) +
   scale_fill_manual(values = category_colors) +
-  coord_flip() +
-  scale_y_continuous(labels = NULL) +
+  coord_flip(xlim = c(0, 7)) +
+  scale_y_continuous(labels = NULL, expand = expansion(mult = c(0.1, 0.1))) +
+  
+  # Place Social Labels
+  annotate(
+    "text", x = 1, y = 102, 
+    label = "Well-To-Do", 
+    size = 2, angle = 90
+  ) +
+  annotate(
+    "text", x = 2.5, y = 102, 
+    label = "Comfortable", 
+    size = 2,angle = 90
+  ) +
+  annotate(
+    "text", x = 4.5, y = 102, 
+    label = "Fair", 
+    size = 2, angle = 90
+  ) +
+  annotate(
+    "text", x = 6.5, y = 102, 
+    label = "Poor", 
+    size = 2, angle = 90
+  ) +
+  # Bottom text annotation
+  annotate(
+    "text", x = 0, y = 45, 
+    label = "FOR FURTHER STATISTICS RAISE THIS FRAME.", 
+    size = 2
+  ) +
   labs(
-    title = "",
     x = "",
-    y = "FOR FURTHER STATISTICS RAISE THIS FRAME."
+    y = "",
+    fill = "Annual Expenditure For"
   ) +
   theme_minimal(base_size = 14) +
   theme(
-    plot.title = element_text(face = "bold", hjust = 0.5),
-    axis.text.y = element_text(face = "bold"),
-    legend.position = "none",
-    plot.margin = margin(r = 10)
-  )
+    plot.title = element_blank(),
+    axis.title.y = element_blank(),
+    axis.text.y = element_text(face = "bold", size = 7),
+    panel.grid = element_blank(),
+    legend.position = "top",
+    legend.title.position = "top",
+    legend.title.align = 0.5,
+  ) +
+  guides(fill = guide_legend(reverse = TRUE))
+
+# Load background image
+income_plot <- ggbackground(income_plot, "images/parchment_paper.jpg")
+print(income_plot)
 
 ```
 
 ## 2 - COVID survey - interpret
 
-```{r}
-#| label: COVID-interpret
+### Example 1
 
-```
+For the questions, "Based on my understanding, I believe this vaccine is safe" and "I am concerned about my safety and side effects of the vaccine", the large error bars indicate high variability in responses. This may suggest that there are widely differing perceptions of vaccine safety and potential side effects. Based on my intuition, this is a viable sentiment, this may reflect underlying differences in trust, prior knowledge, or exposure to misinformation.
+
+### Example 2
+
+Participants that received the COVID and Flu vaccine expressed a similar sentiment of "feeling safer at work" and confidence of the COVID vaccine vetting process. This shared perspective may reflect institutional trust among dual-vaccinated individuals. In contrast, non-vaccinated participants express skepticism with less confidence in the vaccine development process and reduced trust in the institutions promoting vaccination. I agree with these results, this is highlighting a divergence in vaccines perception of credibility and safety.
+
+### Example 3
+
+Nursing and Medical Participants returned surprising results for "feeling safer at work" and confidence of the COVID vaccine vetting process. Nurses showed low variation in their responses with narrower error bars, indicating a high level of trust. In contrast, medical participants exhibited a wider range of responses with larger error bars suggesting greater variability in confidence and perceived workplace safety. This divergence may point to differing experiences, levels of autonomy, or access to information between the two professional groups.
 
 ## 3 - COVID survey - reconstruct
 
