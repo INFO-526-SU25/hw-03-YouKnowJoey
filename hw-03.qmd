@@ -50,15 +50,6 @@ income <- income |>
     ClassLabel = factor(ClassLabel, levels = unique(ClassLabel))
   )
 
-# Prepare income data for bar plot
-income_clean <- income |>
-  select(ClassLabel, Rent, Food, Clothes, Tax, Other) |>
-  pivot_longer(cols = Rent:Other, names_to = "Category", values_to = "Percent") |>
-  mutate(Category = factor(Category, levels = ordered_categories)) |>
-  group_by(ClassLabel) |>
-  mutate(pos = cumsum(Percent) - Percent / 2) |>
-  ungroup()
-
 # Define Category order and colors
 ordered_categories <- c("Other", "Tax", "Clothes", "Food", "Rent")
 
@@ -69,6 +60,15 @@ category_colors <- c(
   Tax = "#a9a09d",
   Other = "#bdb09f"
 )
+
+# Prepare income data for bar plot
+income_clean <- income |>
+  select(ClassLabel, Rent, Food, Clothes, Tax, Other) |>
+  pivot_longer(cols = Rent:Other, names_to = "Category", values_to = "Percent") |>
+  mutate(Category = factor(Category, levels = ordered_categories)) |>
+  group_by(ClassLabel) |>
+  mutate(pos = cumsum(Percent) - Percent / 2) |>
+  ungroup()
 
 
 # Plot
@@ -157,7 +157,113 @@ Nursing and Medical Participants returned surprising results for "feeling safer 
 ## 3 - COVID survey - reconstruct
 
 ```{r}
-#| label: COVID-reconstruct
+#| label: COVID-clean
+
+# Load COVID Survey
+survey <- read.csv("data/covid-survey.csv")
+
+# Clean Names and Filter NAs
+survey_clean <- survey |> 
+  row_to_names(row_number = 1) |>
+  clean_names() |>
+  mutate(across(everything(), ~ na_if(., ""))) |> # empty strings to NA
+  filter(if_any(-response_id, ~ !is.na(.)))       # Remove rows where all except 'response_id' are NA
+
+survey_clean |>
+  dim()
+```
+
+``` {r}
+#| label: COVID-recode
+
+# recode variables
+survey_recoded <- survey_clean |>
+  mutate(
+    exp_already_vax = recode(
+      exp_already_vax, "0" = "No", "1" = "Yes"),
+    exp_flu_vax = recode(
+      exp_flu_vax, "0" = "No", "1" = "Yes"),
+    exp_profession = recode(
+      exp_profession, "0" = "Medical", "1" = "Nursing"),
+    exp_gender = recode(
+      exp_gender, 
+      "0" = "Male",
+      "1" = "Female", 
+      "3" = " Non-binary third gender", 
+      "4" = "Prefer not to say"
+      ),
+    exp_race = recode(
+      exp_race, 
+      "1" = "American Indian / Alaskan Native", 
+      "2" = "Asian", 
+      "3" = "Black / African American", 
+      "4" = "Native Hawaiian / Other Pacific Islander", 
+      "5" = "White"
+      ),
+    exp_ethnicity = recode(
+      exp_ethnicity, "1" = "Hispanic / Latino", 
+      "2" = "Non-Hispanic/Non-Latino"
+      ),
+    exp_age_bin = case_when(
+      exp_age_bin == "0" ~ "<20",
+      exp_age_bin == "20" ~ "20–25",
+      exp_age_bin == "25" ~ "26–30",
+      exp_age_bin == "30" ~ ">30",
+      TRUE ~ NA_character_  # For NA values
+      )
+  )
+
+survey_recoded |>
+  dim()
+```
+
+``` {r}
+#| label: COVID-summary_stats
+
+covid_survey_longer <- survey_recoded |>
+  pivot_longer(
+    cols = starts_with("exp_"),
+    names_to = "explanatory",
+    values_to = "explanatory_value"
+  ) |>
+  filter(!is.na(explanatory_value)) |>
+  pivot_longer(
+    cols = starts_with("resp_"),
+    names_to = "response",
+    values_to = "response_value"
+  )
+
+covid_survey_summary_stats_by_group <- covid_survey_longer |>
+  group_by(explanatory, explanatory_value, response) |>
+  summarize(
+    mean = mean(as.numeric(response_value), na.rm = TRUE),
+    low  = quantile(as.numeric(response_value), probs = 0.1, na.rm = TRUE),
+    high = quantile(as.numeric(response_value), probs = 0.9, na.rm = TRUE),
+    .groups = "keep"
+  ) 
+
+covid_survey_summary_stats_by_group
+
+covid_survey_summary_stats_all <- covid_survey_longer |>
+  group_by(response) |>
+  summarize(
+    mean = mean(as.numeric(response_value), na.rm = TRUE),
+    low  = quantile(as.numeric(response_value), probs = 0.1, na.rm = TRUE),
+    high = quantile(as.numeric(response_value), probs = 0.9, na.rm = TRUE),
+    explanatory = "All",
+    explanatory_value = "",
+    .groups = "drop"
+  )
+
+covid_survey_summary_stats_all
+
+# Bind summary stats by rows
+covid_survey_summary_stats <- bind_rows(
+  covid_survey_summary_stats_by_group,
+  covid_survey_summary_stats_all
+)
+
+covid_survey_summary_stats
 
 ```
 
