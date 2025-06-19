@@ -12,6 +12,7 @@ if (!require("pacman"))
   install.packages("pacman")
 
 pacman::p_load(tidyverse, lubridate, glue, scales, dplyr, ggthemes, # most necessary libs.
+               ggalt,    # For dumbbell plot
                ggimage,  # change background with image
                fs,       # filesystem lib.
                janitor  # clean data
@@ -218,7 +219,7 @@ survey_recoded |>
 ```
 
 ``` {r}
-#| label: COVID-summary_stats
+#| label: COVID-summary_stats-data-wrangling
 
 covid_survey_longer <- survey_recoded |>
   pivot_longer(
@@ -264,6 +265,61 @@ covid_survey_summary_stats <- bind_rows(
 )
 
 covid_survey_summary_stats
+
+```
+
+``` {r}
+#| label: COVID-survey-recreation
+#| fig-height: 8
+
+response_labels <- c( 
+  "resp_safety" = "Based on my understanding, I believe the vaccine is safe", # 1
+  "resp_feel_safe_at_work" = "Getting the vaccine will make me feel safer at work", # 2
+  "resp_concern_safety" = "I am concerned about the safety and side effects of the vaccine", # 3
+  "resp_confidence_science" = "I am confident in the scientific vetting process for the new COVID vaccines", # 4
+  "resp_trust_info" = "I trust the information that I have received about the vaccines", # 5
+  "resp_will_recommend" = "I will recommend the vaccine to family, friends, and community members" # 6
+)
+
+explanatory_labels <- c(
+  "exp_age_bin" = "Age",
+  "exp_gender" = "Gender",
+  "exp_race" = "Race",
+  "exp_ethnicity" = "Ethnicity",
+  "exp_profession" = "Profession",
+  "exp_already_vax" = "Had COVID vaccine",
+  "exp_flu_vax" = "Had flu vaccine this year"
+)
+
+covid_survey_summary_stats |>
+  mutate(
+    response = recode(response, !!!response_labels),
+    explanatory = recode(explanatory, !!!explanatory_labels)
+  ) |>
+  
+  ggplot(aes(y = fct_rev(explanatory_value), x = low, xend = high)) +
+  geom_dumbbell(color = "gray", size = 2) +
+  geom_point(aes(x = mean), color = "black", size = 2) +
+  facet_grid(
+    explanatory ~ response, 
+    labeller = labeller(
+      response = label_wrap_gen(15),
+      explanatory = label_wrap_gen(15)), 
+    scales = "free_y") +
+  labs(
+    title = NULL,
+    x = "Mean Likert Scored\n(Error Bars range from 10th to 90th percentile)",
+    y = NULL
+  ) +
+  coord_cartesian(clip = "off") +
+  theme_minimal() +
+  theme(
+    strip.text.y = element_text(angle = 0, hjust = 1, size = 12), # Rotate "explanatory" labels
+    strip.text.x = element_text(size = 12),
+    axis.text.y = element_text(size = 12, hjust = 1),
+    panel.grid.major = element_blank(),
+    panel.grid.minor = element_blank()
+  )
 
 ```
 
