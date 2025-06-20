@@ -512,8 +512,7 @@ covid_plot_100_percent <- covid_survey_diverge_proportion |>
     title = "Diverging Opinions in COVID Survey",
     subtitle = "Interpreting COVID survey using divergent bar", 
     x = "Proportion of Mean Response",
-    y = NULL,
-    caption = "Source: Shah et al. of Johns Hopkins School of Medicine"
+    y = NULL
   ) +
   theme_minimal() +
   theme(
@@ -548,8 +547,7 @@ covid_plot_100_percent <- covid_survey_diverge_proportion |>
     title = "Porportionaly Strong Opinions in COVID Survey",
     subtitle = "Intreptating the average response using a stacked bar chart", 
     x = "Proportion of Mean Response",
-    y = NULL,
-    caption = "Source: Shah et al. of Johns Hopkins School of Medicine"
+    y = NULL
   ) +
   theme_minimal() +
   guides(fill = guide_legend(reverse = TRUE)) +
