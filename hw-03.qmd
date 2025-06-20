@@ -145,7 +145,7 @@ print(income_plot)
 
 ### Example 1
 
-For the questions, "Based on my understanding, I believe this vaccine is safe" and "I am concerned about my safety and side effects of the vaccine", the large error bars indicate high variability in responses. This may suggest that there are widely differing perceptions of vaccine safety and potential side effects. Based on my intuition, this is a viable sentiment, this may reflect underlying differences in trust, prior knowledge, or exposure to misinformation.
+For the questions, "Based on my understanding, I believe this vaccine is safe" and "I am concerned about my safety and side effects of the vaccine", the wider error bars indicate higher variability in responses. This may suggest that there are widely differing perceptions of vaccine safety and potential side effects. Based on my intuition, this is a viable sentiment, this may reflect underlying differences in trust, prior knowledge, or exposure to misinformation.
 
 ### Example 2
 
@@ -416,9 +416,19 @@ covid_plot_alt
 
 When comparing the two graphs, the immediate difference is the smaller intervals because of a reduced percentile range. These percentiles are specified as probabilities between 0 and 1 in the quantile() function. 
 
+My view has changed based on the new plot, read the following:
+
+For example 1, the error bars are more narrow for "Based on my understanding, I believe this vaccine is safe". My conclusion changes, the majority of the error bars now span across the 1 and 2 response values. In contrast, the error bars for the original plot spans across all response values 1 through 5. The new plot portrays to the audience that participants are more certain the "vaccine" is safe. 
+
+No change, for example 2. 
+
+For example 3, similar to example 1, the error bars are more narrow and show less variability in the data. The answers among Nurses and Medical doesn't indicate any sign of divergence in opinions. Based on the new plot, Nurses and Medical now show error bars that trend towards positive sentiment towards "trusting the vetting process" and "safer at work".
+
 ## 5 - COVID survey - another view
 
 ```{r}
 #| label: COVID-alternate-plot
+
+
 
 ```
