@@ -11,11 +11,15 @@ toc: true
 if (!require("pacman")) 
   install.packages("pacman")
 
-pacman::p_load(tidyverse, lubridate, glue, scales, dplyr, ggthemes, # most necessary libs.
-               RColorBrewer,
+pacman::p_load(tidyverse, 
+               lubridate, 
+               glue, 
+               scales, 
+               dplyr, 
+               ggthemes, # (above) necessary libs
+               RColorBrewer, # Divergence color pallete
                forcats,  # reorder function
                ggimage,  # change background with image
-               fs,       # filesystem lib.
                janitor  # clean data
                )       
 
@@ -329,7 +333,6 @@ covid_plot <- covid_survey_summary_stats |>
     x = "Mean Likert Scored\n(Error bars range from 10th to 90th percentile)",
     y = NULL
   ) +
-  coord_cartesian(clip = "off") +
   theme_minimal() +
   theme(
     strip.text.y = element_text(angle = 0, hjust = 0.5, size = 12), # Rotate "explanatory" labels
@@ -404,7 +407,6 @@ covid_plot_alt <- covid_survey_summary_stats_alt |>
     x = "Mean Likert Scored\n(Error bars range from 25th to 75th percentile)",
     y = NULL
   ) +
-  coord_cartesian(clip = "off") +
   theme_minimal() +
   theme(
     strip.text.y = element_text(angle = 0, hjust = 0.5, size = 12), # Rotate "explanatory" labels
@@ -434,7 +436,6 @@ For example 3, similar to example 1, the error bars are more narrow and show les
 
 ```{r}
 #| label: COVID-calculate-proportions
-#| fig-alt: This will be the alt text
 
 # Response Labels for Legend and Fill
 response_value_labels <- c(
@@ -477,7 +478,7 @@ covid_survey_diverge_proportion <- covid_survey_diverge_proportion |>
 
 ``` {r}
 #| label: COVID-diverging-plot
-#| fig-alt: This will be the alt text
+#| fig-alt: Diverging bar chart showing proportions of Likert scale responses, from Strongly Disagree to Strongly Agree, across COVID-related survey questions. Bars extend left for negative sentiment and right for positive sentiment, this portrays the disparity of agreement levels across questions relating to participants trust of the COVID vaccine. This graph highlights participant's larger concern of safety and side effects of the COVID vaccine.  
 #| fig-height: 7
 
 # Legend Configuration
@@ -509,7 +510,7 @@ covid_plot_100_percent <- covid_survey_diverge_proportion |>
   ) +
   labs(
     title = "Diverging Opinions in COVID Survey",
-    subtitle = "Interpreting COVID Survey using Divergent Bar", 
+    subtitle = "Interpreting COVID survey using divergent bar", 
     x = "Proportion of Mean Response",
     y = NULL,
     caption = "Source: Shah et al. of Johns Hopkins School of Medicine"
@@ -531,7 +532,7 @@ covid_plot_100_percent
 
 ``` {r}
 #| label: COVID-100-percent-plot
-#| fig-alt: This will be the alt text
+#| fig-alt: Stacked bar chart showing proportions of Likert scale responses, from Strongly Agree to Strongly Disagree, across COVID-related survey questions, scaled from 0% to 100%. The chart highlights participants' difference of opinion concerning safety and side effects of the COVID vaccine.
 #| fig-height: 7
 
 covid_plot_100_percent <- covid_survey_diverge_proportion |>
@@ -545,7 +546,7 @@ covid_plot_100_percent <- covid_survey_diverge_proportion |>
   scale_fill_brewer(palette = "RdYlBu") +
   labs(
     title = "Porportionaly Strong Opinions in COVID Survey",
-    subtitle = "Intreptating the Mean Response of ", 
+    subtitle = "Intreptating the average response using a stacked bar chart", 
     x = "Proportion of Mean Response",
     y = NULL,
     caption = "Source: Shah et al. of Johns Hopkins School of Medicine"
