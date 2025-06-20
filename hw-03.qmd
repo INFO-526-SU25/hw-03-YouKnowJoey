@@ -12,6 +12,7 @@ if (!require("pacman"))
   install.packages("pacman")
 
 pacman::p_load(tidyverse, lubridate, glue, scales, dplyr, ggthemes, # most necessary libs.
+               RColorBrewer,
                forcats,  # reorder function
                ggimage,  # change background with image
                fs,       # filesystem lib.
@@ -119,13 +120,16 @@ income_plot <- income_clean |>
     size = 2
   ) +
   labs(
+    title = "INCOME AND EXPENDITURE OF 150 BLACK FAMILIES IN ATLANTA,G.A.,U.S.A.",
+    subtitle = "Reproducing Du Bois",
     x = "",
     y = "",
     fill = "Annual Expenditure For"
   ) +
   theme_minimal(base_size = 14) +
   theme(
-    plot.title = element_blank(),
+    plot.title.position = "plot",
+    plot.title = element_text(hjust = 0, size = 12, face = "bold"),
     axis.title.y = element_blank(),
     axis.text.y = element_text(face = "bold", size = 7),
     panel.grid = element_blank(),
@@ -273,7 +277,8 @@ covid_survey_summary_stats
 
 ``` {r}
 #| label: COVID-survey-recreation
-#| fig-height: 8
+#| fig-height: 12
+#| fig-width: 12
 
 response_labels <- c( 
   "resp_safety" = 
@@ -343,7 +348,8 @@ covid_plot
 
 ```{r}
 #| label: COVID-re-reconstruct
-#| fig-height: 8
+#| fig-height: 12
+#| fig-width: 12
 
 
 # create quantile values for high and low probabilities
@@ -427,8 +433,132 @@ For example 3, similar to example 1, the error bars are more narrow and show les
 ## 5 - COVID survey - another view
 
 ```{r}
-#| label: COVID-alternate-plot
+#| label: COVID-calculate-proportions
+#| fig-alt: This will be the alt text
+
+# Response Labels for Legend and Fill
+response_value_labels <- c(
+  "1" = "Strongly Agree",
+  "2" = "Somewhat Agree",
+  "3" = "Neither Agree or Disagree",
+  "4" = "Somewhat Disagree",
+  "5" = "Strongly Disagree"
+)
+
+# calculate proportion for %100 of 'response'
+covid_survey_summary_proportion <- covid_survey_longer |>
+  filter(!is.na(response_value)) |>
+  group_by(response, response_value) |>
+  summarize(n = n(), .groups = "drop") |>
+  group_by(response) |>
+  mutate(prop = n / sum(n)) # cal. mean
+
+# calculate proportions for Diverging chart
+covid_survey_diverge_proportion <- covid_survey_summary_proportion |>
+  # classify divergence
+  mutate(
+    response_value = factor(response_value, levels = c("5", "4", "3", "2", "1")),
+    signed_prop = case_when(
+      response_value %in% c("1", "2") ~ prop,
+      TRUE ~ -prop
+    )
+  ) 
+
+# Prepare labels for plot
+covid_survey_diverge_proportion <- covid_survey_diverge_proportion |>
+  # adjust feature response names and values
+  mutate(
+    response = recode(response, !!!response_labels),
+    # wrap text
+    response = str_wrap(response, width = 25)
+  )
+
+```
+
+``` {r}
+#| label: COVID-diverging-plot
+#| fig-alt: This will be the alt text
+#| fig-height: 7
+
+# Legend Configuration
+likert_colors <- RColorBrewer::brewer.pal(5, "RdYlBu")
+legend_breaks <- rev(c(
+  "Strongly Agree",
+  "Somewhat Agree",
+  "Neither Agree or Disagree",
+  "Somewhat Disagree",
+  "Strongly Disagree"
+))
+
+covid_plot_100_percent <- covid_survey_diverge_proportion |>
+  mutate(
+    response_value = factor(response_value, levels = c("5", "4", "3", "1", "2")),
+    response_value = recode(response_value, !!!response_value_labels)
+  ) |>
+
+  ggplot(aes(, x = signed_prop, y = response, fill = response_value)) +
+  geom_bar(position='stack', stat='identity') +
+  scale_x_continuous(
+    limits = c(-.8, 1), 
+    breaks = seq(-1, 1, by = 0.25),
+    labels = scales::percent
+  ) +
+  scale_fill_manual(
+    values = likert_colors,
+    breaks = legend_breaks
+  ) +
+  labs(
+    title = "Diverging Opinions in COVID Survey",
+    subtitle = "Interpreting COVID Survey using Divergent Bar", 
+    x = "Proportion of Mean Response",
+    y = NULL,
+    caption = "Source: Shah et al. of Johns Hopkins School of Medicine"
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "top",
+    legend.title = element_blank(),
+    legend.text = element_text(size = 6),
+    axis.text.y = element_text(size = 6, hjust = 1),
+    panel.grid.minor = element_blank(),
+    panel.grid.major.y = element_blank()
+  )
+
+covid_plot_100_percent
+```
 
 
 
+``` {r}
+#| label: COVID-100-percent-plot
+#| fig-alt: This will be the alt text
+#| fig-height: 7
+
+covid_plot_100_percent <- covid_survey_diverge_proportion |>
+  mutate(
+    response_value = recode(response_value, !!!response_value_labels)
+  ) |>
+
+  ggplot(aes(y = response, x = prop, fill = response_value)) +
+  geom_bar(position='stack', stat='identity') +
+  scale_x_continuous(labels = scales::percent) +
+  scale_fill_brewer(palette = "RdYlBu") +
+  labs(
+    title = "Porportionaly Strong Opinions in COVID Survey",
+    subtitle = "Intreptating the Mean Response of ", 
+    x = "Proportion of Mean Response",
+    y = NULL,
+    caption = "Source: Shah et al. of Johns Hopkins School of Medicine"
+  ) +
+  theme_minimal() +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  theme(
+    legend.position = "top",
+    legend.title = element_blank(),
+    legend.text = element_text(size = 6),
+    axis.text.y = element_text(size = 6, hjust = 1),
+    panel.grid.major = element_blank()
+  )
+
+covid_plot_100_percent
 ```
